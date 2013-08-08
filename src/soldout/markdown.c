@@ -1668,6 +1668,66 @@ is_ref(char *data, size_t beg, size_t end, size_t *last, struct array *refs) {
 	return 1; }
 
 
+/**********************
+ * BYPASS EXTENSIONS  *
+ **********************/
+
+/* bp_tag_length • returns the length of the given tag, or 0 is it's not valid
+ Bypass extension that detects autolinks (http/https) that are not surrounded by square brackets */
+static size_t
+bp_tag_length(char *data, size_t size, enum mkd_autolink *autolink) {
+	size_t i, j;
+
+	/* a valid tag can't be shorter than 3 chars */
+	if (size < 3) return 0;
+
+	/* begins with a 'h' */
+	if (data[0] != 'h') return 0;
+	i = 1;
+
+	/* scheme test */
+	*autolink = MKDA_NOT_AUTOLINK;
+	if (size > 5 && strncasecmp(data, "http", 4) == 0 && (data[4] == ':'
+                                                          || ((data[4] == 's' || data[4] == 'S') && data[5] == ':'))) {
+		i = data[4] == ':' ? 5 : 6;
+		*autolink = MKDA_NORMAL; }
+
+	/* completing autolink test: no whitespace or ' or " */
+	if (i >= size)
+		*autolink = MKDA_NOT_AUTOLINK;
+	else if (*autolink) {
+		j = i;
+		while (i < size && data[i] != '\''
+               && data[i] != '"' && data[i] != ' ' && data[i] != '\t'
+               && data[i] != '\t')
+			i += 1;
+		if (i >= size) return 0;
+		if (i > j && (data[i] == '\'' || data[i] != '"' || data[i] != ' ' || data[i] != '\t' || data[i] != '\t')) return i + 1;
+		/* one of the forbidden chars has been found */
+		*autolink = MKDA_NOT_AUTOLINK; }
+    
+	return 0; }
+
+/* bp_char_langle_tag • '<' when tags or autolinks are allowed
+ Bypass extension that detects autolinks (http/https) that are not surrounded by square brackets */
+static size_t
+bp_char_langle_tag(struct buf *ob, struct render *rndr,
+                   char *data, size_t offset, size_t size) {
+	enum mkd_autolink altype = MKDA_NOT_AUTOLINK;
+	size_t end = bp_tag_length(data, size, &altype);
+	struct buf work = { data, end, 0, 0, 0 };
+	int ret = 0;
+	if (end) {
+		if (rndr->make.autolink && altype != MKDA_NOT_AUTOLINK) {
+			work.data = data + 1;
+			work.size = end - 2;
+			ret = rndr->make.autolink(ob, &work, altype,
+                                      rndr->make.opaque); }
+		else if (rndr->make.raw_html_tag)
+			ret = rndr->make.raw_html_tag(ob, &work,
+                                          rndr->make.opaque); }
+	if (!ret) return 0;
+	else return end; }
 
 /**********************
  * EXPORTED FUNCTIONS *
@@ -1702,6 +1762,10 @@ markdown(struct buf *ob, struct buf *ib, const struct mkd_renderer *rndrer) {
 	rndr.active_char['<'] = char_langle_tag;
 	rndr.active_char['\\'] = char_escape;
 	rndr.active_char['&'] = char_entity;
+
+#ifdef BYPASS_MARKDOWN_EXTENSIONS
+    rndr.active_char['h'] = bp_char_langle_tag;
+#endif
 
 	/* first pass: looking for references, copying everything else */
 	beg = 0;
