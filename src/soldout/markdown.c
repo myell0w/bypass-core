@@ -1699,10 +1699,10 @@ bp_tag_length(char *data, size_t size, enum mkd_autolink *autolink) {
 		j = i;
 		while (i < size && data[i] != '\''
                && data[i] != '"' && data[i] != ' ' && data[i] != '\t'
-               && data[i] != '\t')
+               && data[i] != '\t' && data[i] != '\n')
 			i += 1;
-		if (i >= size) return 0;
-		if (i > j && (data[i] == '\'' || data[i] != '"' || data[i] != ' ' || data[i] != '\t' || data[i] != '\t')) return i + 1;
+		if (i > size) return 0;
+		if (i > j && (data[i] == '\'' || data[i] == '"' || data[i] == ' ' || data[i] == '\t' || data[i] == '\t' || data[i] == '\n')) return i + 1;
 		/* one of the forbidden chars has been found */
 		*autolink = MKDA_NOT_AUTOLINK; }
     
@@ -1719,8 +1719,8 @@ bp_char_langle_tag(struct buf *ob, struct render *rndr,
 	int ret = 0;
 	if (end) {
 		if (rndr->make.autolink && altype != MKDA_NOT_AUTOLINK) {
-			work.data = data + 1;
-			work.size = end - 2;
+			work.data = data;
+			work.size = end - 1;
 			ret = rndr->make.autolink(ob, &work, altype,
                                       rndr->make.opaque); }
 		else if (rndr->make.raw_html_tag)
