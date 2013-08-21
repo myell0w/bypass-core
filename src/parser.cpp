@@ -237,22 +237,24 @@ namespace Bypass {
                     int pos = atoi(str.c_str());
                     std::map<int, Element>::iterator elit = elementSoup.find(pos);
 
-                    Element element = elit->second;
-                    element.setType(type);
+                    if (elit != elementSoup.end()) {
+                        Element element = elit->second;
+                        element.setType(type);
 
-                    if (element.getType() == LINK) {
-                        if (extra != NULL && extra->size) {
-                            element.addAttribute("link", std::string(extra->data, extra->data + extra->size));
+                        if (element.getType() == LINK) {
+                            if (extra != NULL && extra->size) {
+                                element.addAttribute("link", std::string(extra->data, extra->data + extra->size));
+                            }
+
+                            if (extra2 != NULL && extra2->size) {
+                                element.addAttribute("title", std::string(extra2->data, extra2->data + extra2->size));
+                            }
                         }
 
-                        if (extra2 != NULL && extra2->size) {
-                            element.addAttribute("title", std::string(extra2->data, extra2->data + extra2->size));
+                        elementSoup.erase(pos);
+                        if (output) {
+                            elementSoup[pos] = element;
                         }
-                    }
-                    
-                    elementSoup.erase(pos);
-                    if (output) {
-                        elementSoup[pos] = element;
                     }
                 }
             }
