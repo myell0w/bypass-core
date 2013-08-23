@@ -1727,7 +1727,7 @@ bp_char_langle_tag(struct buf *ob, struct render *rndr,
 			ret = rndr->make.raw_html_tag(ob, &work,
                                           rndr->make.opaque); }
 	if (!ret) return 0;
-	else return end; }
+	else return end-1; }
 
 /**********************
  * EXPORTED FUNCTIONS *
