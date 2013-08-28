@@ -227,31 +227,37 @@ namespace Bypass {
             element.addAttribute("link", textString);
 
 			createSpan(element, ob);
-		} else if (strs.size() > 0) {
-			std::string str0 = strs[0];
+		} else if (!strs.empty()) {
+            std::vector<std::string>::iterator iterator;
 
-			if (str0.length() > 0) {
-				int pos = atoi(str0.c_str());
-				std::map<int, Element>::iterator elit = elementSoup.find(pos);
+            for (iterator = strs.begin(); iterator != strs.end(); iterator++) {
+                std::string str = *iterator;
 
-				Element element = elit->second;
-				element.setType(type);
+                if (str.length() > 0) {
+                    int pos = atoi(str.c_str());
+                    std::map<int, Element>::iterator elit = elementSoup.find(pos);
 
-                if (element.getType() == LINK) {
-                    if (extra != NULL && extra->size) {
-                        element.addAttribute("link", std::string(extra->data, extra->data + extra->size));
-                    }
+                    if (elit != elementSoup.end()) {
+                        Element element = elit->second;
+                        element.setType(type);
 
-                    if (extra2 != NULL && extra2->size) {
-                        element.addAttribute("title", std::string(extra2->data, extra2->data + extra2->size));
+                        if (element.getType() == LINK) {
+                            if (extra != NULL && extra->size) {
+                                element.addAttribute("link", std::string(extra->data, extra->data + extra->size));
+                            }
+
+                            if (extra2 != NULL && extra2->size) {
+                                element.addAttribute("title", std::string(extra2->data, extra2->data + extra2->size));
+                            }
+                        }
+
+                        elementSoup.erase(pos);
+                        if (output) {
+                            elementSoup[pos] = element;
+                        }
                     }
                 }
-
-				elementSoup.erase(pos);
-				if (output) {
-					elementSoup[pos] = element;
-				}
-			}
+            }
 
 			if (output) {
 				bufputs(ob, textString.c_str());
@@ -340,13 +346,12 @@ namespace Bypass {
 		// that butts up against a span-level element. This will ignore it.
 
 		if (text && text->size > 0) {
-			Element normalText;
-			normalText.setType(TEXT);
-			normalText.text.assign(text->data, text->data + text->size);
-			createSpan(normalText, ob);
+            Element normalText;
+            normalText.setType(TEXT);
+            normalText.text.assign(text->data, text->data + text->size);
+            createSpan(normalText, ob);
 		}
 	}
-
 }
 
 // Block Element callbacks
