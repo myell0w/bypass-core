@@ -1730,6 +1730,73 @@ bp_char_langle_tag(struct buf *ob, struct render *rndr,
 	else return end-1; }
 
 /**********************
+ * REDDIT EXTENSIONS  *
+ **********************/
+
+static int
+bp_reddit_valid_char(char c) {
+    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || (c == '_');
+}
+
+/* bp_reddit_tag_length • returns the length of the given tag, or 0 is it's not valid
+ Bypass extension that detects reddit user/subreddit link (/r/subreddit, /u/user) */
+static size_t
+bp_reddit_tag_length(char *data, size_t size, enum mkd_autolink *autolink) {
+	size_t i, j;
+
+	/* a valid tag can't be shorter than 5 chars */
+	if (size < 5) return 0;
+
+	/* begins with a '/' */
+	if (data[0] != '/') return 0;
+    /* the previous character is a whitespace or another special character */
+    char cBefore = data[-1]; // TODO: is there a more sane way to check that? does this crash sometimes?
+    if (cBefore != ' ' && cBefore != '\t' && cBefore != '\n' && cBefore != '\'' && cBefore != '"' && cBefore != '\0') return 0;
+
+	i = 1;
+
+	/* scheme test */
+	*autolink = MKDA_NOT_AUTOLINK;
+	if ((strncasecmp(data, "/r/", 3) == 0 || strncasecmp(data, "/u/", 3) == 0) && (bp_reddit_valid_char(data[3]))) {
+		i = 3;
+		*autolink = MKDA_NORMAL; }
+
+	/* completing reddit username/subreddit test: no invalid chars */
+	if (i >= size)
+		*autolink = MKDA_NOT_AUTOLINK;
+	else if (*autolink) {
+		j = i;
+		while (i < size && bp_reddit_valid_char(data[i]))
+			i += 1;
+		if (i > size) return 0;
+		if (i > j && !bp_reddit_valid_char(data[i])) return i + 1;
+		/* one of the forbidden chars has been found */
+		*autolink = MKDA_NOT_AUTOLINK; }
+
+	return 0; }
+
+/* bp_reddit_char_langle_tag • '/' when reddit links are detected
+ Bypass extension that detects reddit user/subreddit link (/r/subreddit, /u/user) */
+static size_t
+bp_reddit_char_langle_tag(struct buf *ob, struct render *rndr,
+                          char *data, size_t offset, size_t size) {
+	enum mkd_autolink altype = MKDA_NOT_AUTOLINK;
+	size_t end = bp_reddit_tag_length(data, size, &altype);
+	struct buf work = { data, end, 0, 0, 0 };
+	int ret = 0;
+	if (end) {
+		if (rndr->make.autolink && altype != MKDA_NOT_AUTOLINK) {
+			work.data = data;
+			work.size = end - 1;
+			ret = rndr->make.autolink(ob, &work, altype,
+                                      rndr->make.opaque); }
+		else if (rndr->make.raw_html_tag)
+			ret = rndr->make.raw_html_tag(ob, &work,
+                                          rndr->make.opaque); }
+	if (!ret) return 0;
+	else return end-1; }
+
+/**********************
  * EXPORTED FUNCTIONS *
  **********************/
 
@@ -1765,6 +1832,10 @@ markdown(struct buf *ob, struct buf *ib, const struct mkd_renderer *rndrer) {
 
 #ifdef BYPASS_MARKDOWN_EXTENSIONS
     rndr.active_char['h'] = bp_char_langle_tag;
+#endif
+
+#ifdef BYPASS_REDDIT_EXTENSIONS
+    rndr.active_char['/'] = bp_reddit_char_langle_tag;
 #endif
 
 	/* first pass: looking for references, copying everything else */
