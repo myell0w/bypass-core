@@ -1751,7 +1751,8 @@ bp_reddit_tag_length(char *data, size_t size, enum mkd_autolink *autolink) {
 	if (data[0] != '/') return 0;
     /* the previous character is a whitespace or another special character */
     char cBefore = data[-1]; // TODO: is there a more sane way to check that? does this crash sometimes?
-    if (cBefore != ' ' && cBefore != '\t' && cBefore != '\n' && cBefore != '\'' && cBefore != '"' && cBefore != '\0') return 0;
+    if (cBefore != ' ' && cBefore != '\t' && cBefore != '\n' && cBefore != '\'' && cBefore != '"' && cBefore != '\0' &&
+        cBefore != '(' && cBefore != '[' && cBefore != '<') return 0;
 
 	i = 1;
 
