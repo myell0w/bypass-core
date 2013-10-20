@@ -1698,11 +1698,15 @@ bp_tag_length(char *data, size_t size, enum mkd_autolink *autolink) {
 	else if (*autolink) {
 		j = i;
 		while (i < size && data[i] != '\''
-               && data[i] != '"' && data[i] != ' ' && data[i] != '\t'
-               && data[i] != '\t' && data[i] != '\n')
+               && data[i] != '"' && data[i] != ' ' && data[i] != '\t' && data[i] != '\n'
+               && data[i] != '(' && data[i] != ')' && data[i] != '[' && data[i] != ']')
 			i += 1;
 		if (i > size) return 0;
-		if (i > j && (data[i] == '\'' || data[i] == '"' || data[i] == ' ' || data[i] == '\t' || data[i] == '\t' || data[i] == '\n')) return i + 1;
+		if (i > j && (data[i] == '\'' || data[i] == '"' || data[i] == ' ' || data[i] == '\t'
+                      || data[i] == '\n' || data[i] == '(' || data[i] == ')' || data[i] == '['
+                      || data[i] == ']'))
+            return i + 1;
+
 		/* one of the forbidden chars has been found */
 		*autolink = MKDA_NOT_AUTOLINK; }
     
@@ -1752,7 +1756,8 @@ bp_reddit_tag_length(char *data, size_t size, enum mkd_autolink *autolink) {
     /* the previous character is a whitespace or another special character */
     char cBefore = data[-1]; // TODO: is there a more sane way to check that? does this crash sometimes?
     if (cBefore != ' ' && cBefore != '\t' && cBefore != '\n' && cBefore != '\'' && cBefore != '"' && cBefore != '\0' &&
-        cBefore != '(' && cBefore != '[' && cBefore != '<') return 0;
+        cBefore != '(' && cBefore != ')' && cBefore != '[' && cBefore != ']' && cBefore != '<' && cBefore != '>' &&
+        cBefore != ',' && cBefore != ';' && cBefore != '-') return 0;
 
 	i = 1;
 
