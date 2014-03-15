@@ -167,7 +167,7 @@ namespace Bypass {
 	}
 
 	void Parser::split(std::vector<std::string> &tokens, const std::string &text, char sep) {
-		int start = 0, end = 0;
+		unsigned long start = 0, end = 0;
 
 		while ((end = text.find(sep, start)) != string::npos) {
 			tokens.push_back(text.substr(start, end - start));

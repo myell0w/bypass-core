@@ -180,7 +180,7 @@ find_block_tag(char *data, size_t size) {
 
 	/* binary search of the tag */
 	key.text = data;
-	key.size = i;
+	key.size = (int)i;
 	return bsearch(&key, block_tags,
 				sizeof block_tags / sizeof block_tags[0],
 				sizeof block_tags[0], cmp_html_tag); }
