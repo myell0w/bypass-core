@@ -1697,12 +1697,12 @@ bp_tag_length(char *data, size_t size, enum mkd_autolink *autolink) {
 		*autolink = MKDA_NOT_AUTOLINK;
 	else if (*autolink) {
 		j = i;
-		while (i < size && data[i] != '\''
+		while (i < size
                && data[i] != '"' && data[i] != ' ' && data[i] != '\t' && data[i] != '\n'
                && data[i] != '(' && data[i] != ')' && data[i] != '[' && data[i] != ']')
 			i += 1;
 		if (i > size) return 0;
-		if (i > j && (data[i] == '\'' || data[i] == '"' || data[i] == ' ' || data[i] == '\t'
+		if (i > j && (data[i] == '"' || data[i] == ' ' || data[i] == '\t'
                       || data[i] == '\n' || data[i] == '(' || data[i] == ')' || data[i] == '['
                       || data[i] == ']'))
             return i + 1;
@@ -1745,7 +1745,7 @@ bp_reddit_valid_char(char c) {
 /* bp_reddit_tag_length • returns the length of the given tag, or 0 is it's not valid
  Bypass extension that detects reddit user/subreddit link (/r/subreddit, /u/user) */
 static size_t
-bp_reddit_tag_length(char *data, size_t size, enum mkd_autolink *autolink) {
+bp_reddit_tag_length(char *data, size_t offset, size_t size, enum mkd_autolink *autolink) {
 	size_t i, j;
 
 	/* a valid tag can't be shorter than 5 chars */
@@ -1754,10 +1754,12 @@ bp_reddit_tag_length(char *data, size_t size, enum mkd_autolink *autolink) {
 	/* begins with a '/' */
 	if (data[0] != '/') return 0;
     /* the previous character is a whitespace or another special character */
-    char cBefore = data[-1]; // TODO: is there a more sane way to check that? does this crash sometimes?
-    if (cBefore != ' ' && cBefore != '\t' && cBefore != '\n' && cBefore != '\'' && cBefore != '"' && cBefore != '\0' &&
-        cBefore != '(' && cBefore != ')' && cBefore != '[' && cBefore != ']' && cBefore != '<' && cBefore != '>' &&
-        cBefore != ',' && cBefore != ';' && cBefore != '-') return 0;
+    if (offset > 0) {
+        char cBefore = data[-1]; // TODO: is there a more sane way to check that? does this crash sometimes?
+        if (cBefore != ' ' && cBefore != '\t' && cBefore != '\n' && cBefore != '\'' && cBefore != '"' && cBefore != '\0' &&
+            cBefore != '(' && cBefore != ')' && cBefore != '[' && cBefore != ']' && cBefore != '<' && cBefore != '>' &&
+            cBefore != ',' && cBefore != ';' && cBefore != '-' && cBefore != '*') return 0;
+    }
 
 	i = 1;
 
@@ -1787,7 +1789,7 @@ static size_t
 bp_reddit_char_langle_tag(struct buf *ob, struct render *rndr,
                           char *data, size_t offset, size_t size) {
 	enum mkd_autolink altype = MKDA_NOT_AUTOLINK;
-	size_t end = bp_reddit_tag_length(data, size, &altype);
+	size_t end = bp_reddit_tag_length(data, offset, size, &altype);
 	struct buf work = { data, end, 0, 0, 0 };
 	int ret = 0;
 	if (end) {
