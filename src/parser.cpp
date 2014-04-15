@@ -123,11 +123,16 @@ namespace Bypass {
 
 		if ( it != elementSoup.end() ) {
 			Element *element = &((*it).second);
-			size_t pos = element->text.size() - controlCharacters.size();
+            size_t elementTextSize = element->text.size();
+            size_t controlCharactersSize = controlCharacters.size();
 
-			if (element->text.substr(pos, string::npos) == controlCharacters) {
-				element->text.erase(pos, string::npos);
-			}
+            if (elementTextSize >= controlCharactersSize) {
+                size_t pos = elementTextSize - controlCharactersSize;
+
+                if (element->text.substr(pos, string::npos) == controlCharacters) {
+                    element->text.erase(pos, string::npos);
+                }
+            }
 		}
 	}
 
